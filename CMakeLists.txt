@@ -8,12 +8,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find PoDoFo Package
 find_package(podofo CONFIG REQUIRED)
 
-# Add Executable
-add_executable(Folium
+# Source files
+set(SRC_FILES
     src/main.cpp
     src/PdfMerger.cpp
     src/PdfSplitter.cpp
+
+    src/MergeCommand.cpp
+    src/SplitCommand.cpp
+    src/CommandFactory.cpp
+    src/CommandLineParser.cpp
 )
+
+# Add Executable
+add_executable(Folium ${SRC_FILES})
 
 # Include Directories
 target_include_directories(Folium PRIVATE
