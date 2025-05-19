@@ -12,6 +12,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Use environment variable NPROC for parallel builds if set
+if(DEFINED ENV{NPROC})
+    set(CMAKE_BUILD_PARALLEL_LEVEL $ENV{NPROC})
+endif()
+
 # Output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -20,9 +25,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 #-----------------------------------------------------------------------------
 # Dependencies
 #-----------------------------------------------------------------------------
+# Find PoDoFo package (assumes it provides proper CMake config files)
 find_package(podofo CONFIG REQUIRED)
+
+# Check for targets podofo_shared or podofo_static
 if(NOT TARGET podofo_shared AND NOT TARGET podofo_static)
-    message(FATAL_ERROR "PoDoFo package found but no valid targets")
+    message(FATAL_ERROR "PoDoFo package found but no valid targets (podofo_shared or podofo_static)")
 endif()
 
 #-----------------------------------------------------------------------------
@@ -53,10 +61,11 @@ add_executable(Folium src/main.cpp)
 target_link_libraries(Folium PRIVATE FoliumCore)
 
 #-----------------------------------------------------------------------------
-# Testing Support (but tests are in separate directory)
+# Testing Support (assumes tests directory with CMakeLists.txt)
 #-----------------------------------------------------------------------------
- enable_testing()
-    add_subdirectory(tests)  # This will find tests/CMakeLists.txt
+enable_testing()
+add_subdirectory(tests)
+
 #-----------------------------------------------------------------------------
 # Installation (optional)
 #-----------------------------------------------------------------------------

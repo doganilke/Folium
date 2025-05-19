@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
-
 project(FoliumTests)
-
-# Enable testing support
 enable_testing()
 
-# Find required packages
-find_package(GTest REQUIRED CONFIG)
+# Use classic find_package without CONFIG
+find_package(GTest REQUIRED)
 
 add_executable(FoliumTests
     tests_main.cpp
@@ -16,22 +13,19 @@ add_executable(FoliumTests
     SplitCommandTest.cpp
 )
 
-# Include directories (for both your headers and mocks)
 target_include_directories(FoliumTests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}  # For mock headers in the same directory
-    ${GTEST_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${GTEST_INCLUDE_DIRS}  # This includes both gtest and gmock headers now
 )
 
-# Link libraries
 target_link_libraries(FoliumTests PRIVATE
-    GTest::gtest
-    GTest::gtest_main
-    GTest::gmock
-    GTest::gmock_main
+    gtest
+    gtest_main
+    gmock
+    gmock_main
     FoliumCore
 )
 
-# Discover and add tests
 include(GoogleTest)
 gtest_discover_tests(FoliumTests)

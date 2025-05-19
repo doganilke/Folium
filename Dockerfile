@@ -1,73 +1,51 @@
-# syntax=docker/dockerfile:1.6
+# Use an official Ubuntu base image
+FROM ubuntu:22.04 AS production
 
-# Stage 1: Build environment
-FROM --platform=$BUILDPLATFORM ubuntu:22.04 as builder
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Configure environment
-ENV DEBIAN_FRONTEND=noninteractive \
-    CMAKE_BUILD_TYPE=Release \
-    VCPKG_ROOT=/opt/vcpkg
-
-# Install base dependencies
-RUN <<EOF
-apt-get update
-apt-get install -y --no-install-recommends \
+# Install build tools and dependencies
+RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
+    pkg-config \
     ninja-build \
+    libfreetype6-dev \
+    libfontconfig1-dev \
+    libssl-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    libpng-dev \
     git \
     wget \
-    tar \
     curl \
-    ca-certificates
-rm -rf /var/lib/apt/lists/*
-EOF
+    && rm -rf /var/lib/apt/lists/*
 
-# Install vcpkg
-RUN git clone https://github.com/microsoft/vcpkg $VCPKG_ROOT && \
-    $VCPKG_ROOT/bootstrap-vcpkg.sh -disableMetrics && \
-    $VCPKG_ROOT/vcpkg integrate install
+# Clone and build PoDoFo
+RUN git clone --branch master https://github.com/podofo/podofo.git /podofo && \
+    cd /podofo && \
+    cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build && \
+    cmake --install build
 
-# Install dependencies
-RUN $VCPKG_ROOT/vcpkg install \
-    podofo \
-    gtest
+# Clone and build Google Test
+RUN git clone --branch release-1.11.0 https://github.com/google/googletest.git /googletest && \
+    cd /googletest && \
+    cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build && \
+    cmake --install build
 
+# Set working directory for your app
 WORKDIR /app
+
+# Copy your application source code
 COPY . .
 
-# Build with CMake
-RUN <<EOF
-cmake -B build -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
-    -DBUILD_TESTING=ON
-cmake --build build --parallel $(nproc)
-EOF
+# Build your app
+RUN cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build
 
-# Stage 2: Test runner
-FROM builder as tester
-RUN cd build && \
-    ctest --output-on-failure --output-junit test-results.xml
-
-# Stage 3: Production image
-FROM ubuntu:22.04 as production
-
-# Install runtime dependencies
-RUN <<EOF
-apt-get update && \
-apt-get install -y --no-install-recommends \
-    libpodofo0 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-EOF
-
-WORKDIR /app
-COPY --from=builder /app/build/Folium .
-
-# Security hardening
-RUN addgroup --system appuser && \
-    adduser --system --ingroup appuser appuser && \
-    chown appuser:appuser /app/Folium
-
-USER appuser
-ENTRYPOINT ["./Folium"]
+# Default command to run your app
+CMD ["./build/Folium"]

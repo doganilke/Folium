@@ -1,0 +1,31 @@
+FROM ubuntu:22.04 AS build
+
+WORKDIR /app
+
+# Install general build tools and dependencies for PoDoFo
+RUN apt update && apt install -y \
+    cmake g++ make git ninja-build wget \
+    libfreetype6-dev libfontconfig1-dev libssl-dev libxml2-dev zlib1g-dev libjpeg-dev libtiff-dev libpng-dev
+
+# Build and install PoDoFo from source
+RUN git clone --branch master https://github.com/podofo/podofo.git /podofo && \
+    cd /podofo && \
+    cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build && \
+    cmake --install build
+
+# Build and install GoogleTest and GoogleMock from source (to get libs + headers)
+RUN apt-get update && apt-get install -y cmake build-essential git && \
+    git clone --depth 1 https://github.com/google/googletest.git /tmp/googletest && \
+    cd /tmp/googletest && \
+    cmake -S . -B build -DBUILD_GMOCK=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON && \
+    cmake --build build --target install
+
+# Copy your app source code into the container
+COPY . .
+
+# Configure and build your app (PoDoFo installed in /usr/local)
+RUN cmake -S . -B build -DCMAKE_PREFIX_PATH=/usr/local && cmake --build build
+
+FROM build AS test
+RUN cd build && ctest --output-on-failure --output-junit /app/test-results.xml

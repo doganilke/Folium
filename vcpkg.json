@@ -1,0 +1,8 @@
+{
+  "name": "folium",
+  "version": "0.1.0",
+  "dependencies": [
+    "gtest",
+    "podofo"
+  ]
+}
