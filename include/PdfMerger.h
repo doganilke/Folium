@@ -4,8 +4,8 @@
 #include <vector>
 #include <iostream>
 #include <utility>
-#include <podofo/podofo.h>
 #include "IPdfMerger.h"
+#include <podofo/podofo.h>
 
 class PdfMerger : public IPdfMerger {
 public:

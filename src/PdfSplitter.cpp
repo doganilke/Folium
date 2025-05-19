@@ -1,8 +1,8 @@
 #include "PdfSplitter.h"
 
 #include <iostream>
-#include <cstdio>      // for std::snprintf
-#include <stdexcept>   // for std::runtime_error
+#include <cstdio>     
+#include <stdexcept>  
 #include <podofo/podofo.h>
 
 void PdfSplitter::Split(const std::string& inputFile, const std::string& outputPattern) {

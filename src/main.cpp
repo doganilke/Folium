@@ -1,5 +1,7 @@
 #include "CommandLineParser.h"
 #include "CommandFactory.h"
+#include "PdfMerger.h"
+#include "PdfSplitter.h"
 #include <iostream>
 
 int main(int argc, char* argv[]) {
@@ -10,7 +12,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto cmd = CommandFactory::createCommand(parser.getCommand(), parser.getArguments());
+    PdfMerger merger;
+    PdfSplitter splitter;
+
+    CommandFactory factory(merger, splitter);
+
+    auto cmd = factory.createCommand(parser.getCommand(), parser.getArguments());
     if (!cmd) {
         parser.printUsage();
         return 1;

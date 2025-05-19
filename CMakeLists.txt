@@ -1,42 +1,83 @@
 cmake_minimum_required(VERSION 3.16)
-project(FoliumApp LANGUAGES CXX)
+project(FoliumApp
+    VERSION 1.0.0
+    LANGUAGES CXX
+    DESCRIPTION "PDF manipulation tool using PoDoFo"
+)
 
-# Set C++ Standard
+#-----------------------------------------------------------------------------
+# Global Configuration
+#-----------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Find PoDoFo Package
+# Output directories
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+#-----------------------------------------------------------------------------
+# Dependencies
+#-----------------------------------------------------------------------------
 find_package(podofo CONFIG REQUIRED)
+if(NOT TARGET podofo_shared AND NOT TARGET podofo_static)
+    message(FATAL_ERROR "PoDoFo package found but no valid targets")
+endif()
 
-# Source files
-set(SRC_FILES
-    src/main.cpp
+#-----------------------------------------------------------------------------
+# Main Library
+#-----------------------------------------------------------------------------
+add_library(FoliumCore STATIC
     src/PdfMerger.cpp
     src/PdfSplitter.cpp
-
     src/MergeCommand.cpp
     src/SplitCommand.cpp
     src/CommandFactory.cpp
     src/CommandLineParser.cpp
 )
 
-# Add Executable
-add_executable(Folium ${SRC_FILES})
-
-# Include Directories
-target_include_directories(Folium PRIVATE
-    "${CMAKE_SOURCE_DIR}/include"
+target_include_directories(FoliumCore PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
-# Link Libraries
-target_link_libraries(Folium PRIVATE
+target_link_libraries(FoliumCore PUBLIC
     $<IF:$<TARGET_EXISTS:podofo_shared>,podofo_shared,podofo_static>
 )
 
-# Set Output Directory
-set_target_properties(Folium PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
+#-----------------------------------------------------------------------------
+# Main Executable
+#-----------------------------------------------------------------------------
+add_executable(Folium src/main.cpp)
+target_link_libraries(Folium PRIVATE FoliumCore)
+
+#-----------------------------------------------------------------------------
+# Testing Support (but tests are in separate directory)
+#-----------------------------------------------------------------------------
+ enable_testing()
+    add_subdirectory(tests)  # This will find tests/CMakeLists.txt
+#-----------------------------------------------------------------------------
+# Installation (optional)
+#-----------------------------------------------------------------------------
+install(TARGETS Folium
+    RUNTIME DESTINATION bin
 )
 
-# Print Status
-message(STATUS "Building FoliumApp with C++17 and PoDoFo")
+install(TARGETS FoliumCore
+    ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include
+)
+
+#-----------------------------------------------------------------------------
+# Summary
+#-----------------------------------------------------------------------------
+message(STATUS "\n========================================")
+message(STATUS "  FoliumApp Configuration Summary")
+message(STATUS "========================================")
+message(STATUS "Version:       ${PROJECT_VERSION}")
+message(STATUS "C++ Standard:  ${CMAKE_CXX_STANDARD}")
+message(STATUS "Build Tests:   ${BUILD_TESTING}")
+message(STATUS "PoDoFo Found:  ${podofo_FOUND}")
+message(STATUS "Output Dir:    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+message(STATUS "========================================\n")

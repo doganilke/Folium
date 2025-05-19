@@ -1,4 +1,5 @@
 #include "PdfMerger.h"
+#include <podofo/podofo.h>
 
 void PdfMerger::Merge(const std::string& outputFile, const std::vector<std::string>& inputFiles) {
     MergeImpl(outputFile, inputFiles);
